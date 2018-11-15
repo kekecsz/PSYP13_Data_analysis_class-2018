@@ -31,6 +31,14 @@ data_house = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_ana
 #                                                         #
 ###########################################################
 
+## assumptions
+# normality of residuals
+# linear relationship of outcome and predictors
+# homoscedasticity (homogeneity of variance)
+# no multicollinearity
+
+
+
 # Fit the final model (containing all predictors)
 mod_house2 = lm(price ~ sqft_living + grade, data = data_house)
 
@@ -56,6 +64,8 @@ describe(residuals(mod_house2))
 hist(residuals(mod_house2), breaks = 20)
 
 mod_house3 = lm(price ~ sqft_living + grade, data = data_house[-c(186, 113),])
+
+# recheck the assumption of normality of residuals
 describe(residuals(mod_house3))
 plot(mod_house3, which = 2)
 hist(residuals(mod_house3), breaks = 20)
@@ -74,13 +84,13 @@ residualPlots(mod_house3)
 
 # homoscedasticty assumption (homogeneity of variance)
 plot(mod_house3, which = 3)
-ncvTest(mod_house2)
+ncvTest(mod_house3)
 
 # multicollinearity (VIF above 5), or a VIF threshold of 3 is recommended in this paper: http://onlinelibrary.wiley.com/doi/10.1111/j.2041-210X.2009.00001.x/full
 # some info about VIF: 
 # https://statisticalhorizons.com/multicollinearity
 # http://blog.minitab.com/blog/understanding-statistics/handling-multicollinearity-in-regression-analysis
-vif(mod_house2)
+vif(mod_house3)
 pairs.panels(data_house[,c("price", "sqft_living", "grade")], col = "red", lm = T)
 
 
