@@ -21,8 +21,7 @@
 ###########################################################
 
 # Housing sales dataset from Kaggel
-data_house = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_analysis_class/master/data_house_small_sub.csv")
-
+data_house = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_analysis_class-2018/master/data_house_small_sub.csv")
 
 ###########################################################
 #                                                         #
@@ -32,41 +31,52 @@ data_house = read.csv("https://raw.githubusercontent.com/kekecsz/PSYP13_Data_ana
 
 
 
-# Quantify the amount of information gained about the variability of the outcome
-# by adding pedictors in block certain predictors
+# Using hierarchical regression, you can quantify the amount of information gained by adding a new predictor or a set of predictors to a previous model. To do this, you will build two models, the predictors in one is the subset of the predictors in the other model.
+
+# Here we first build a model to predict the price of the apartment by using only sqft_living and grade as predictors.  
 mod_house2 <- lm(price ~ sqft_living + grade, data = data_house)
-summary(mod_house2)
 
-mod_house_geolocation_inter2 = lm(price ~ sqft_living + grade + long * lat, data = data_house)
-summary(mod_house_geolocation_inter2)
+# Next, we want to see whether we can improve the effeffctiveness of our prediction by taking into account geographic location in our model, in addition to living space and grade
+mod_house_geolocation = lm(price ~ sqft_living + grade + long + lat, data = data_house)
 
-# compare models with the anova function
-# can only be used if the models are nested! (all of the predictor used in the
-# smaller model are also used in the larger model)
-anova(mod_house2, mod_house_geolocation_inter2)
+# We can look at the adj. R squared statistic to see how much variance is explained by the new and the old model.
 
-# compare with AIC
-# smaller AIC means more information
-# if the difference in AIC of the two models is smaller than 2, they contain
-# roughly the same information about the outcome
-AIC(mod_house2)
-AIC(mod_house_geolocation_inter2)
+summary(mod_house2)$adj.r.squared
+summary(mod_house_geolocation)$adj.r.squared
 
+# It seems that the variance explained has increased substantially by adding information about geographic location to the model.
 
-mod_house_geolocation_inter_neig = lm(price ~ sqft_living + grade + long * lat + sqft_living15 + sqft_lot15, data = data_house)
-summary(mod_house_geolocation_inter_neig)
+# Now, we should compare residual error and model fit thought the anova() function and the AIC() function.
+# The anova() function can only be used for comparing models if the two models are "nested", that is, predictors in one of the models are a subset of predictors of the other model.
+# If the anova F test is significant, it means that the models are significantly different in terms of their residual errors.
+# If the difference in AIC of the two models is larger than 2, the two models are significantly different in their model fit. Smaller AIC means less error and better model fit, so in this case we accept the model with the smaller AIC. However, if the difference in AIC does not reach 2, we can retain either of the two models. Ususally we stick with the less complicated model in this case, but theoretical considerations and previous results should also be considered when doing model selection.
 
-# you can enter multiple models into anova
-anova(mod_house2, mod_house_geolocation_inter2, mod_house_geolocation_inter_neig)
+anova(mod_house2, mod_house_geolocation)
 
 AIC(mod_house2)
-AIC(mod_house_geolocation_inter2)
-AIC(mod_house_geolocation_inter_neig)
-# these results indicate that we did not gain substantial new information about
-# the variability of the outcome by entering information about the neighborhood
-# into the model
+AIC(mod_house_geolocation)
 
+# The same procedure can be repeated if we have more than two steps/blocks in the hierarchical regression.
 
+# Here we build a third model, which adds even more predictors to the formula. This time, we add information about the condition of the apartment.
+
+mod_house_geolocation_cond = lm(price ~ sqft_living + grade + long + lat + condition, data = data_house)
+
+# We can compare the three models now.
+# R^2
+summary(mod_house2)$adj.r.squared
+summary(mod_house_geolocation)$adj.r.squared
+summary(mod_house_geolocation_cond)$adj.r.squared
+
+# anova
+anova(mod_house2, mod_house_geolocation, mod_house_geolocation_cond)
+
+# AIC
+AIC(mod_house2)
+AIC(mod_house_geolocation)
+AIC(mod_house_geolocation_cond)
+
+# Did we gain substantial information about housing price by adding information about the condition of the apartment to the model?
 
 
 ###########################################################
@@ -103,13 +113,21 @@ lines(price[order(sqft_living)] ~ sqft_living[order(sqft_living)], data = data_h
 # linear regression is very inflexible, so it is less prone to overfitting
 
 # training set with a felxible model
-plot(price ~ sqft_living, data = data_house[10:30,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
 mod_for_plot <- lm(price ~ sqft_living, data = data_house[10:30,])
 pred <- predict(mod_for_plot)
+plot(price ~ sqft_living, data = data_house[10:30,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
 lines(pred[order(data_house[10:30,"sqft_living"])] ~ data_house[10:30,"sqft_living"][order(data_house[10:30,"sqft_living"])])
 # testing model performance on test set (fits OK)
+pred_test <- predict(mod_for_plot, newdata = data_house[30:50,])
 plot(price ~ sqft_living, data = data_house[30:50,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
-lines(pred[order(data_house[10:30,"sqft_living"])] ~ data_house[10:30,"sqft_living"][order(data_house[10:30,"sqft_living"])])
+lines(pred_test[order(data_house[30:50,"sqft_living"])] ~ data_house[30:50,"sqft_living"][order(data_house[30:50,"sqft_living"])])
+
+# comparing residual sum of squares of the two models on the test set
+RSS_felx = sum((data_house[30:50,"price"] - data_house[10:30,"price"])^2)
+RSS_linreg = sum((data_house[30:50,"price"] - pred_test)^2)
+RSS_linreg/RSS_felx
+# the linear regression RSS is much smaller
+
 
 # but the more predictors you include in the model, the more flexible it gets
 # thus, overfitting becomes a problem again
