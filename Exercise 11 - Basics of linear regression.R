@@ -80,8 +80,16 @@ table(mydata$gender)
 
 # you should exclude or correct data that is not valid
 mydata_cleaned = mydata # create a copy of the data where which will be cleaned
+
+
+mydata_cleaned[mydata_cleaned[,"height"] == "168cm", "height"] = 168
+mydata_cleaned[,"height"] = as.numeric(mydata_cleaned[,"height"])
+
+
+
 mydata_cleaned = mydata_cleaned[-which(mydata_cleaned[,"gender"] == "etc."),] # exclude invalid value
-mydata_cleaned[,"gender"][mydata_cleaned[,"gender"] == "female "] = "female" # unify different coding variations
+# this code might be required to correct the dataframe as well if you have a cell where "female" has a space after it.
+# mydata_cleaned[,"gender"][mydata_cleaned[,"gender"] == "female "] = "female" # unify different coding variations
 
 # check that the variable is clean now
 table(mydata_cleaned$gender)
