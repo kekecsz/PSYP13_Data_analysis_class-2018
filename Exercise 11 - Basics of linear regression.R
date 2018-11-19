@@ -59,6 +59,8 @@ error_plotter <- function(mod, col = "black", x_var = NULL){
 
 # You can load the data we just collected with the following code
 mydata = as.data.frame(gsheet2tbl("https://docs.google.com/spreadsheets/d/1C07SRvPJzftZaFApiI5YgptyymvyYQpIUi9v6gFbLHw/edit?usp=sharing"))
+# or you can use this permanent link from github, that contains an older version of the same data table
+# mydata = read.csv("https://bit.ly/2Q0qZgP")
 
 # You should always check the dataset for coding errors or data that does not make sense.
 # View data in the data viewer tool 
@@ -83,9 +85,10 @@ mydata_cleaned = mydata # create a copy of the data where which will be cleaned
 
 
 mydata_cleaned[mydata_cleaned[,"height"] == "168cm", "height"] = 168
-mydata_cleaned[,"height"] = as.numeric(mydata_cleaned[,"height"])
+mydata_cleaned[,"height"] = as.numeric(as.character(mydata_cleaned[,"height"]))
+mydata_cleaned[mydata_cleaned[,"height"] == 64, "height"] = 164
 
-
+describe(mydata_cleaned[,"height"])
 
 mydata_cleaned = mydata_cleaned[-which(mydata_cleaned[,"gender"] == "etc."),] # exclude invalid value
 # this code might be required to correct the dataframe as well if you have a cell where "female" has a space after it.
