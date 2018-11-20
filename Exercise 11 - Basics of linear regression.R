@@ -93,6 +93,10 @@ describe(mydata_cleaned[,"height"])
 mydata_cleaned = mydata_cleaned[-which(mydata_cleaned[,"gender"] == "etc."),] # exclude invalid value
 # this code might be required to correct the dataframe as well if you have a cell where "female" has a space after it.
 # mydata_cleaned[,"gender"][mydata_cleaned[,"gender"] == "female "] = "female" # unify different coding variations
+mydata_cleaned[mydata_cleaned[,"gender"] == "Female", "gender"] = "female"
+mydata_cleaned[mydata_cleaned[,"gender"] == "Male", "gender"] = "male"
+
+mydata_cleaned[,"gender"] = droplevels(mydata_cleaned[,"gender"])  # if the variable gender is identified as a factor, we can drop the factor levels that no longer use (such as "Female" and "Male" instead of "female" and "male")
 
 # check that the variable is clean now
 table(mydata_cleaned$gender)
