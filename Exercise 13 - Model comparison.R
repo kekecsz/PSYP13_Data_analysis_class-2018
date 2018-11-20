@@ -91,123 +91,100 @@ AIC(mod_house_geolocation_cond)
 # because automatic model selection can lead to overfitting
 
 
-# "predicting" variability of the outcome in your original data is easy
+# "Predicting" variability of the outcome in your original data is easy
+# If you fit a model that is too flexible, you will get perfect fit on your intitial data.
+# For example you can fit a line that would cover your data perfectly, reaching 100% model fit... to a dataset where you already knew the outcome.
+# However, when you try to apply the same model to new data, it will produce bad model fit. In most cases, worse, than a simple regression.
+# In this context, data on which the model was built is called the training set, and the new data where we test the true prediction efficiency of a model is called the test set. The test set can be truely newly collected data, or it can be a set aside portion of our old data which was not used to fit the model.
+# Linear regression is very inflexible, so it is less prone to overfitting. This is one of its advantages compared to more flexible prediction approaches.
 
-# if you fit a model that is too flexible, you will get perfect fit on your intitial data
-plot(price ~ sqft_living, data = data_house[10:30,])
-lines(price[order(sqft_living)] ~ sqft_living[order(sqft_living)], data = data_house[10:30,])
+## Comparing model performance on the training set and the test set
 
-# but your model will not fit reality well
-# this can be tested by collecting more data, and seeing how 
-# well the model predicts the new data
-# or, by designating a part of your data as a "training set", fitting the 
-# model on that, and testing model performance on the other part, the "test set"
+# In the next part of the exercise we will demonstrate that the more predictors you have, the higher your R^2 will be, even if the predictors have nothing to do with your outcome variable.
+# First, we will generate some random variables for demonstration purposes. These will be used as predictors in some of our models in this exercise. It is important to realize that these variables are randomly generated, and have no true relationship to the sales price of the apartments. Using these random numbers we can demonstrate well how people can be mislead by good prediction performance of models containing many predictors.
 
-# training set with a felxible model
-plot(price ~ sqft_living, data = data_house[10:30,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
-lines(price[order(sqft_living)] ~ sqft_living[order(sqft_living)], data = data_house[10:30,])
-# testing model performance on test set (fits poorly)
-plot(price ~ sqft_living, data = data_house[30:50,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
-lines(price[order(sqft_living)] ~ sqft_living[order(sqft_living)], data = data_house[10:30,])
-
-# linear regression is very inflexible, so it is less prone to overfitting
-
-# training set with a felxible model
-mod_for_plot <- lm(price ~ sqft_living, data = data_house[10:30,])
-pred <- predict(mod_for_plot)
-plot(price ~ sqft_living, data = data_house[10:30,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
-lines(pred[order(data_house[10:30,"sqft_living"])] ~ data_house[10:30,"sqft_living"][order(data_house[10:30,"sqft_living"])])
-# testing model performance on test set (fits OK)
-pred_test <- predict(mod_for_plot, newdata = data_house[30:50,])
-plot(price ~ sqft_living, data = data_house[30:50,], xlim = range(data_house[10:30,"sqft_living"]), ylim = range(data_house[10:30,"price"]))
-lines(pred_test[order(data_house[30:50,"sqft_living"])] ~ data_house[30:50,"sqft_living"][order(data_house[30:50,"sqft_living"])])
-
-# comparing residual sum of squares of the two models on the test set
-RSS_felx = sum((data_house[30:50,"price"] - data_house[10:30,"price"])^2)
-RSS_linreg = sum((data_house[30:50,"price"] - pred_test)^2)
-RSS_linreg/RSS_felx
-# the linear regression RSS is much smaller
-
-
-# but the more predictors you include in the model, the more flexible it gets
-# thus, overfitting becomes a problem again
-
-# a model with the obvious predictors of house price
-# NOTE that we only use the first hundred observation (half) of the dataset
-# here, as a training set, so later we can test the performance 
-# of our model on the other half
-mod_house2_train <- lm(price ~ sqft_living + grade, data = data_house[1:100,])
-summary(mod_house2_train)
-
-# add 50 random variables to the list of predictors
 rand_vars = as.data.frame(matrix(rnorm(mean = 0, sd = 1, n = 50*nrow(data_house)), ncol = 50))
 data_house_withrandomvars = cbind(data_house, rand_vars)
-lm_formula = as.formula(paste("price ~ sqft_living + grade + ", paste(names(rand_vars), collapse = " + "), sep = ""))
 
-mod_house2_rand_train = lm(lm_formula, data = data_house_withrandomvars[1:100,])
+# We create a new data object from the first half of the data (N = 100). We will use this to fit our models on. This is our training set. We set aside the other half of the dataset so that we will be able to test prediction performance on it later. This is called the test set.
 
-# R squared increased a lot
-summary(mod_house2_rand_train)
+training_set = data_house_withrandomvars[1:100,] # this is the training set, here we only use half of the data
+test_set = data_house_withrandomvars[101:200,] # this is the test set, the other half of the dataset
 
-pred_train <- predict(mod_house2_train)
-pred_train_rand <- predict(mod_house2_rand_train)
-RSS_train = sum((data_house_withrandomvars[1:100,"price"] - pred_train)^2)
-RSS_train_rand = sum((data_house_withrandomvars[1:100,"price"] - pred_train_rand)^2)
+# Now we will perform a hierarchical regression where first we fit our usual model predicting price with sqft_living and grade on the training set. Next, we fit a model containing sqft_living and grade and the 50 randomly generated variables that we just created. 
+# (the names of the random variables are V1, V2, V3, ...)
+mod_house_train <- lm(price ~ sqft_living + grade, data = training_set)
+mod_house_rand_train  <- lm(price ~ sqft_living + grade+ V1 + V2 + V3 + V4 + V5 + V6 + V7 + 
+                              V8 + V9 + V10 + V11 + V12 + V13 + V14 + V15 + V16 + V17 + 
+                              V18 + V19 + V20 + V21 + V22 + V23 + V24 + V25 + V26 + V27 + 
+                              V28 + V29 + V30 + V31 + V32 + V33 + V34 + V35 + V36 + V37 + 
+                              V38 + V39 + V40 + V41 + V42 + V43 + V44 + V45 + V46 + V47 + 
+                              V48 + V49 + V50,
+                            data = training_set)
+
+
+# Now we can compare the model performance.
+# First, if we look at the normal R^2 indexes of the models or the RSS, we will find that the model using the random variables (mod_house_rand_train) was much better at predicting the training data. The error was smaller in this model, and the overall variance explained is bigger. You can even notice that some of the random predictors were identified as having significant added prediction value in this model, even though they are not supposed to be related to price at all, since we just created them randomly. This is because some of these variables are alligned with the outcome to some extend by random chance.
+
+summary(mod_house_train)
+summary(mod_house_rand_train)
+
+pred_train <- predict(mod_house_train)
+pred_train_rand <- predict(mod_house_rand_train)
+RSS_train = sum((training_set[,"price"] - pred_train)^2)
+RSS_train_rand = sum((training_set[,"price"] - pred_train_rand)^2)
 RSS_train
 RSS_train_rand
 
-# so is this model better, than the one without the random variablers?
+# That is why we need to use model fit idnexes that are more sensitive to the number of variables we included as redictors, to account for the likelyhood that some variables will show a correlation by chance. Such as adjusted R^2, or the AIC. The anova() test is also sensitive to the number of predictors in the models, so it is not easy to fool by adding a bunch of random data either.
 
-# lets check model performance on the test set (the other half of the dataset)
-# we predict the outcome (price) in the test set with the models fitted on 
-# the training set
-# NOTE that we did not re-fit the models on the test set, we use the models fitted
-# on the training set for the prediction
-pred_test <- predict(mod_house2_train, data_house_withrandomvars[101:200,])
-pred_test_rand <- predict(mod_house2_rand_train, data_house_withrandomvars[101:200,])
-# now we calculate the sum of squared residuals 
-RSS_test = sum((data_house_withrandomvars[101:200,"price"] - pred_test)^2)
-RSS_test_rand = sum((data_house_withrandomvars[101:200,"price"] - pred_test_rand)^2)
-RSS_test
-RSS_test_rand
-# there is more error in the prediction of the model containing the random predictors
-
-
-## What if I don't have a test-set?
-# models can be compared with anova, which is sensitive to the number of predictors
-anova(mod_house2_train, mod_house2_rand_train)
-
-# you can compare adjusted R squared in the summary of the two models
-# adjusted R squared is also sensitive to the number of predictors,
-# but it is still not perfect
-summary(mod_house2_train)
-summary(mod_house2_rand_train)
+summary(mod_house_train)$adj.r.squared
+summary(mod_house_rand_train)$adj.r.squared
 
 # you can compare AIC
 # it will usually choose the smaller model
-AIC(mod_house2_train)
-AIC(mod_house2_rand_train)
+AIC(mod_house_train)
+AIC(mod_house_rand_train)
 
+# models can be compared with anova, which is sensitive to the number of predictors
+anova(mod_house_train, mod_house_rand_train)
+
+
+
+## Result-based models selection
+
+# (don't do this at home)
+# After seeing the performance of mod_house_rand_train, and not knowing that it contains random variables, one might be tempted to build a model with only the predictors that were identified as having a significant added predictive value, to improve the model fit indices (e.g. adjusted R^2 or AIC). And that would acieve exactly that: it would result in the indcrease of the indexes, but not the actual prediction efficiency, so the better indexes would be just an illusion resulting from the fact that we have "hidden" from the statistical tests, that we have tried to use a lot of predictors in a previous model.
+# Excluding variables that seem "useless" based on the results will blind the otherwise sensitive measures of model fit. This is what happens when using automated model selection procedures, such as backward regression.
+# In the example below we use backward regression. This method first fits a complete model with all of the specified predictors, and then determins which predictor has the smallest amount of unique added explanatory value to the model, and excludes it from the list of predictors, refitting the model without this predictor. This procedure is iterated until until there is no more predictor that can be excluded without significantly reducing model fit, at which point the process stops. 
 
 # backward regression
-mod_back_train = step(mod_house2_rand_train, direction = "backward")
+mod_back_train = step(mod_house_rand_train, direction = "backward")
 
-anova(mod_house2_train, mod_back_train)
 
-summary(mod_back_train)
+anova(mod_house_train, mod_back_train)
 
-AIC(mod_house2_train)
-AIC(mod_house2_rand_train)
+summary(mod_house_train)$adj.r.squared
+summary(mod_back_train)$adj.r.squared
+
+AIC(mod_house_train)
 AIC(mod_back_train)
 
-# test the performance of backward regression model on the test set
-# NOTE that we did not re-fit the models on the test set, we use the models fitted
-# on the training set for the prediction
-pred_test <- predict(mod_house2_train, data_house_withrandomvars[101:200,])
-pred_test_back <- predict(mod_back_train, data_house_withrandomvars[101:200,])
+
+
+# All of the above model comparison methods indicate that the backward regression model (mod_back_train) performs better. We know that this model can't be too much better than the smaller model, since it only contains a number of randomly generated variables in addition to the two predictors in the smaller model. So if we would only rely on these numbers, we would be fooled to think that the backward regression model is better.
+
+
+### Testing performance on the test set
+
+# A surefire way of determining actual model performance is to test it on new data, data that was not used in the "training" of the model. Here, we use the set aside test set to do this.
+# Note that we did not re-fit the models on the test set, we use the models fitted on the training set to make our predictions using the predict() function on the test_set!!!
+pred_test <- predict(mod_house_train, test_set)
+pred_test_back <- predict(mod_back_train, test_set)
+
 # now we calculate the sum of squared residuals 
-RSS_test = sum((data_house_withrandomvars[101:200,"price"] - pred_test)^2)
-RSS_test_back = sum((data_house_withrandomvars[101:200,"price"] - pred_test_back)^2)
+RSS_test = sum((test_set[,"price"] - pred_test)^2)
+RSS_test_back = sum((test_set[,"price"] - pred_test_back)^2)
 RSS_test
 RSS_test_back
 # error is larger in the backward regression model
@@ -222,3 +199,9 @@ RSS_test_back
 # post-hoc result-driven model/predictor selection can lead to overfitting
 # the only good test of a model's true performance is to test
 # the accuracy of its predictions on new data (or a set-asid test set)
+
+
+
+
+
+
