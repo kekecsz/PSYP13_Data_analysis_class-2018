@@ -65,6 +65,8 @@ plot(data_house$price ~ data_house$has_basement)
 # We fit a regression model with multiple predictors: sqft_living and grade. In the formula, the predictors are separated by a + sign.
 mod_house1 = lm(price ~ sqft_living + grade, data = data_house)
 
+# tilde
+
 # The regression equation is displayed just like in the case of simple regression
 
 mod_house1
@@ -124,6 +126,16 @@ mod_cat = lm(price ~ sqft_living + grade + has_basement, data = data_house)
 
 mod_cat
 
+summary(mod_cat)
+
+# The default level (reference level) of categorical variables is the level earliest in the alphabet. For this reason, the reference level of the variable has_basement is "has basement".
+# For more intuitive interpretation, it would make sense to change the reference level to "no basement", so that the model coefficient for this variable would be positive, and it would indicate how much price increase would a basement mean for the apartment sales.
+# This can be done with the relevel() function
+# This can be done with the relevel() function. We have to re-run the model for this change to take effect in the model object.
+
+data_house$has_basement = relevel(data_house$has_basement, ref = "no basement")
+
+mod_cat = lm(price ~ sqft_living + grade + has_basement, data = data_house)
 summary(mod_cat)
 
 
